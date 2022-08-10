@@ -52,7 +52,7 @@ This template will create the following resources in your account:
 - Redshift cluster - sforchlab-warehouse-cluster - an empty state machine to be built in this lab, to orchestrate the process from end to end.
 
 1. Click on the following link to launch the CloudFormation process. Please double check you are in the correct account.
-[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=macilflab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/sforchlab/sforchlab-template.json)
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sforchlab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/sforchlab/sforchlab-template.json)
 2. Under parameters, enter a password for the Redshift cluster. This password must between 8 and 64 characters in length, contain at least one uppercase letter, one lowercase letter, and one number, and can use any ASCII characters with ASCII codes 33–126, except \' (single quotation mark), \" (double quotation mark), \\, \/, or \@.
 3. For SubnetCIDR and VpcCIDR parameters values, default values have been suggested for use by the Redshift cluster instance. Please update these values as needed.
 ![](/images/cloudformation/stackdetails.PNG)
@@ -130,7 +130,7 @@ Next, we're going to create a state machine to run AWS crawlers.
 :information_source: Much of the remainder of this lab will involve designing different state machines to orchestrate the data processinga and we will be using Workflow Studio to design the flow of states. The easiest way to do this is to use the "Search" box to find the state machine diagram. Clicking on each state will open a panel with the state configuration on the right hand side. 
 
 4. Design your state machine as shown in the following diagram.
-![](/images/stepfunction/gluecrawler-1.PNG)
+![](/images/stepfunctions/gluecrawler-1.PNG)
 
 :information_source: To form the loop back from the "Wait" state to the "GetCrawler" state, click on the "Wait" state and select "GetCrawler" from the "Next state" dropdown.
 
@@ -140,7 +140,7 @@ Next, we're going to create a state machine to run AWS crawlers.
   "Name.$": "$.Name"
 }
 ```
-![](/images/stepfunction/gluecrawler-2.PNG)
+![](/images/stepfunctions/gluecrawler-2.PNG)
 6. On the Output tab of the "StartCrawler" activity, mark the checkbox next to "Transform result with ResultSelector...", and add the following into the text box:
 ```
 {
@@ -151,26 +151,26 @@ Next, we're going to create a state machine to run AWS crawlers.
 ```
 $.Status
 ```
-![](/images/stepfunction/gluecrawler-3.PNG)
+![](/images/stepfunctions/gluecrawler-3.PNG)
 8. Click on the GetCrawler state, and enter the following under "API Parameters":
 ```
 {
   "Name.$": "$.Name"
 }
 ```
-![](/images/stepfunction/gluecrawler-4.PNG)
+![](/images/stepfunctions/gluecrawler-4.PNG)
 9. On the "Output" tab, mark "Add original input to output...". Leave "Combine original input with result" selected, and enter the following into the textbox:
 ```
 $.GetCrawler
 ```
-![](/images/stepfunction/gluecrawler-5.PNG)
+![](/images/stepfunctions/gluecrawler-5.PNG)
 10. Click on the "Rule #1" path from the "Choice" state, and click "Add conditions". Set the values as shown below:
 - Variable = $.GetCrawler.Crawler.State
 - Operator = is equal to
 - Value = string constant / RUNNING
-![](/images/stepfunction/gluecrawler-6.PNG)
+![](/images/stepfunctions/gluecrawler-6.PNG)
 11. Your state machine should now be similar to the below:
-![](/images/stepfunction/gluecrawler-7.PNG)
+![](/images/stepfunctions/gluecrawler-7.PNG)
 12. Click "Apply and exit", then "Save". 
 13. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.
 \
@@ -184,7 +184,7 @@ Next, we're going to create a state machine to run Amazon Redshift SQL statement
 2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RunGlueCrawler" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 4. Design your state machine as shown in the following diagram.
-![](/images/stepfunction/redshift-1.PNG)
+![](/images/stepfunctions/redshift-1.PNG)
 
 :information_source: To form the loop back from the "Wait" state to the "GetCrawler" state, click on the "Wait" state and select "GetCrawler" from the "Next state" dropdown.
 
@@ -199,33 +199,33 @@ Next, we're going to create a state machine to run Amazon Redshift SQL statement
   "Sql.$": "$.sql"
 }
 ```
-![](/images/stepfunction/redshift-2.PNG)
+![](/images/stepfunctions/redshift-2.PNG)
 6. Click on "DescribeStatement", and enter the following under "API Parameters".
 ```
 {
   "Id.$": "$.Id"
 }
 ```
-![](/images/stepfunction/redshift-3.PNG)
+![](/images/stepfunctions/redshift-3.PNG)
 7. Click on the "Rule #1" path, then click "Add conditions". Add the following values:
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / FINISHED
-![](/images/stepfunction/redshift-4.PNG)
+![](/images/stepfunctions/redshift-4.PNG)
 8. Click "Add new choice rule", then click "Add conditions" and enter the following values.
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / FAILED
-![](/images/stepfunction/redshift-5.PNG)
+![](/images/stepfunctions/redshift-5.PNG)
 9. Drag a "Fail" state to the box labelled "Drop state here".
 10. Click "Add new choice rule", then click "Add conditions" and enter the following values.
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / ABORTED
-![](/images/stepfunction/redshift-6.PNG)
+![](/images/stepfunctions/redshift-6.PNG)
 11. In the "ABORTED" choice rule, in the "Then next state is:" dropdown, select "Fail".
 12. The final state machine should look similar to the following:
-![](/images/stepfunction/redshift-7.PNG)
+![](/images/stepfunctions/redshift-7.PNG)
 13. Click "Apply and exit", then "Save". 
 14. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.
 \
@@ -243,9 +243,9 @@ Now that we've created our reusable state machines, let's create the process to 
 
 :information_source: Note - you can right click on a state and select "Duplicate state".
 
-![](/images/stepfunction/orchn-1.PNG)
+![](/images/stepfunctions/orchn-1.PNG)
 5. Click on the "Load Raw Sales Data" state. Under "API Parameters", select  "sforchlab-loaddataFunction$LATEST" as the "Function name"
-![](/images/stepfunction/orchn-2.PNG)
+![](/images/stepfunctions/orchn-2.PNG)
 6. Click on the "Crawl Raw Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
 ```
 {
@@ -263,7 +263,7 @@ Now that we've created our reusable state machines, let's create the process to 
 }
 ```
 8. Make sure "Wait for task to complete" is selected.
-![](/images/stepfunction/orchn-3.PNG)
+![](/images/stepfunctions/orchn-3.PNG)
 9. Click on the "Crawl Processed Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
 ```
 {
@@ -351,7 +351,7 @@ SELECT * FROM "sales"."aggregated_daily_sales_revenue" limit 10;
 1. To delete the contents of the S3 buckets, navigate to S3 in the AWS Management Console. 
 2. For each bucket created in this lab, select the radio button next to the bucket, then click "Empty". 
 3. Enter the text to confirm and delete the contents.
-4. Repeat this process for each bucket in turn (raw, processed and aggregated).
+4. Complete these steps for both -datalake and the -athena buckets.
 
 ### Delete the CloudFormation stack
 1. To delete the CloudFormation stack, navigate to the stack in the AWS Management Console, and click "Delete". 
