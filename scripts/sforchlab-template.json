@@ -1,0 +1,805 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Parameters": {
+		"ClusterPassword": {
+			"Type": "String",
+			"Description": "Password for the cluster.",
+			"NoEcho": true
+		},
+		"VpcCIDR": {
+			"Type": "String",
+			"Default": "10.0.0.0/20",
+			"Description": ""
+		},
+		"SubnetCIDR": {
+			"Type": "String",
+			"Default": "10.0.0.0/26",
+			"Description": ""
+		}
+	},
+	"Resources": {
+		"dataPipelineOrchestrationRedshiftStatement": {
+			"Type": "AWS::StepFunctions::StateMachine",
+			"Properties": {
+				"StateMachineName": "sforchlab-RedshiftQuery",
+				"StateMachineType": "STANDARD",
+				"DefinitionString": "{\n  \"Comment\": \"Orchestration for Redshift statement\",\n   \"StartAt\": \"Success\",\n   \"States\": {\n    \"Success\": {\n      \"Type\": \"Succeed\"\n    }\n  }\n}",
+				"RoleArn": {
+					"Fn::GetAtt": [
+						"StepFunctionExecutionRole",
+						"Arn"
+					]
+				}
+			}
+		},
+		"dataPipelineOrchestrationGlueCrawler": {
+			"Type": "AWS::StepFunctions::StateMachine",
+			"Properties": {
+				"StateMachineName": "sforchlab-RunGlueCrawler",
+				"StateMachineType": "STANDARD",
+				"DefinitionString": "{\n  \"Comment\": \"Orchestration for ingestion\",\n   \"StartAt\": \"Success\",\n   \"States\": {\n    \"Success\": {\n      \"Type\": \"Succeed\"\n    }\n  }\n}",
+				"RoleArn": {
+					"Fn::GetAtt": [
+						"StepFunctionExecutionRole",
+						"Arn"
+					]
+				}
+			}
+		},
+		"dataPipelineOrchestrationPipelineOrchestration": {
+			"Type": "AWS::StepFunctions::StateMachine",
+			"Properties": {
+				"StateMachineName": "sforchlab-dataPipelineOrchestration",
+				"StateMachineType": "STANDARD",
+				"DefinitionString": "{\n  \"Comment\": \"End to end orchestration\",\n   \"StartAt\": \"Success\",\n   \"States\": {\n    \"Success\": {\n      \"Type\": \"Succeed\"\n    }\n  }\n}",
+				"RoleArn": {
+					"Fn::GetAtt": [
+						"StepFunctionExecutionRole",
+						"Arn"
+					]
+				}
+			}
+		},
+		"lambdafunction": {
+			"Type": "AWS::Lambda::Function",
+			"Properties": {
+				"Description": "Lambda function to ingest raw data to the data lake S3 bucket",
+				"FunctionName": "sforchlab-loadDataFunction",
+				"Handler": "index.handler",
+				"Role": {
+					"Fn::GetAtt": [
+						"LambdaExecutionRole",
+						"Arn"
+					]
+				},
+				"Timeout": 360,
+				"Runtime": "nodejs16.x",
+				"Code": {
+					"ZipFile": {
+						"Fn::Sub": "/* \nMIT No Attribution\n\nCopyright 2021 Amazon.com, Inc. or its affiliates.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this\nsoftware and associated documentation files (the \"Software\"), to deal in the Software\nwithout restriction, including without limitation the rights to use, copy, modify,\nmerge, publish, distribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,\nINCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A\nPARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT\nHOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\nSOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n*/\n\nconst AWS = require('aws-sdk');\n\nexports.handler = async (event) => {\n    \n    const s3 = new AWS.S3();\n\n    \n    let params = {\n        Bucket: \"${AWS::AccountId}-sforchlab-datalake\", \n        CopySource: \"/ee-assets-prod-${AWS::Region}/modules/db6f882c08574dda88b59040c607e491/v3/data/sales.csv\", \n        Key: \"raw/sales/sales.csv\"\n    };\n    \n    await s3.copyObject(params).promise();\n    \n    const response = {\n        statusCode: 200,\n        body: \"Success\"\n    };\n    return response;\n}\n"
+					}
+				}
+			}
+		},
+		"datalakeS3bucket": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-sforchlab-datalake"
+				}
+			}
+		},
+		"athenaS3bucket": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"AccessControl": "BucketOwnerFullControl",
+				"PublicAccessBlockConfiguration": {
+					"BlockPublicAcls": true,
+					"BlockPublicPolicy": true,
+					"IgnorePublicAcls": true,
+					"RestrictPublicBuckets": true
+				},
+				"BucketName": {
+					"Fn::Sub": "${AWS::AccountId}-sforchlab-athena"
+				}
+			}
+		},
+		"StepFunctionExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"states.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/sforchlab/",
+				"Policies": [
+					{
+						"PolicyName": "LambdaPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"lambda:*"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*:*"
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "GluePermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"glue:GetCrawler",
+										"glue:StartCrawler"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:crawler/*"
+										}
+									]
+								},
+								{
+									"Sid": "VisualEditor2",
+									"Effect": "Allow",
+									"Action": [
+										"glue:StartJobRun",
+										"glue:GetJobRun",
+										"glue:GetJob"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/*"
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "RedshiftPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": "redshift:GetClusterCredentials",
+									"Resource": [
+										{
+											"Fn::Join": [
+												"",
+												[
+													{
+														"Fn::Sub": "arn:aws:redshift:${AWS::Region}:${AWS::AccountId}:dbname:"
+													},
+													{
+														"Ref": "redshiftCluster"
+													},
+													"/dev"
+												]
+											]
+										},
+										{
+											"Fn::Join": [
+												"",
+												[
+													{
+														"Fn::Sub": "arn:aws:redshift:${AWS::Region}:${AWS::AccountId}:dbuser:"
+													},
+													{
+														"Ref": "redshiftCluster"
+													},
+													"/admin"
+												]
+											]
+										}
+									]
+								},
+								{
+									"Sid": "VisualEditor1",
+									"Effect": "Allow",
+									"Action": [
+										"redshift-data:GetStatementResult",
+										"redshift-data:CancelStatement",
+										"redshift-data:DescribeStatement",
+										"redshift-data:ListStatements"
+									],
+									"Resource": "*"
+								},
+								{
+									"Sid": "VisualEditor2",
+									"Effect": "Allow",
+									"Action": "redshift-data:*",
+									"Resource": {
+										"Fn::Join": [
+											"",
+											[
+												{
+													"Fn::Sub": "arn:aws:redshift:${AWS::Region}:${AWS::AccountId}:cluster:"
+												},
+												{
+													"Ref": "redshiftCluster"
+												}
+											]
+										]
+									}
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "StepFunctionPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor1",
+									"Effect": "Allow",
+									"Action": "events:*",
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/*"
+										}
+									]
+								},
+								{
+									"Sid": "VisualEditor2",
+									"Effect": "Allow",
+									"Action": "states:*",
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "sforchlab-StepFunctionExecutionRole"
+			}
+		},
+		"GlueExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"glue.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/sforchlab/",
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+				],
+				"Policies": [
+					{
+						"PolicyName": "S3permissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"s3:PutObject"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake"
+										}
+									]
+								},
+								{
+									"Sid": "VisualEditor1",
+									"Effect": "Allow",
+									"Action": [
+										"s3:GetObject"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake/*"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::ee-assets-prod-${AWS::Region}/modules/db6f882c08574dda88b59040c607e491/v3/scripts/*"
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "sforchlab-GlueExecutionRole"
+			}
+		},
+		"LambdaExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"lambda.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/sforchlab/",
+				"Policies": [
+					{
+						"PolicyName": "logPermissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"logs:CreateLogStream",
+										"logs:PutLogEvents"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/loadDataFunction:*"
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"PolicyName": "s3permissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "get",
+									"Effect": "Allow",
+									"Action": "s3:GetObject",
+									"Resource": "arn:aws:s3:::ee-assets-prod-us-east-1/modules/db6f882c08574dda88b59040c607e491/v3/data/sales.csv"
+								},
+								{
+									"Sid": "put",
+									"Effect": "Allow",
+									"Action": "s3:PutObject",
+									"Resource": {
+										"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake/*"
+									}
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "sforchlab-LambdaExecutionRole"
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "85094c66-0e90-45f4-94d9-6b3671d0885e"
+				}
+			}
+		},
+		"RedshiftExecutionRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Statement": [
+						{
+							"Action": [
+								"sts:AssumeRole"
+							],
+							"Effect": "Allow",
+							"Principal": {
+								"Service": [
+									"redshift.amazonaws.com"
+								]
+							}
+						}
+					],
+					"Version": "2012-10-17"
+				},
+				"Path": "/sforchlab/",
+				"ManagedPolicyArns": [
+					"arn:aws:iam::aws:policy/AmazonRedshiftAllCommandsFullAccess"
+				],
+				"Policies": [
+					{
+						"PolicyName": "s3permissions",
+						"PolicyDocument": {
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Sid": "VisualEditor0",
+									"Effect": "Allow",
+									"Action": [
+										"s3:PutObject",
+										"s3:GetObject",
+										"s3:ListBucket"
+									],
+									"Resource": [
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake"
+										},
+										{
+											"Fn::Sub": "arn:aws:s3:::${AWS::AccountId}-sforchlab-datalake/*"
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"RoleName": "sforchlab-RedshiftExecutionRole"
+			},
+			"Metadata": {
+				"AWS::CloudFormation::Designer": {
+					"id": "85094c66-0e90-45f4-94d9-6b3671d0885e"
+				}
+			}
+		},
+		"SalesDatabase": {
+			"Type": "AWS::Glue::Database",
+			"Properties": {
+				"CatalogId": {
+					"Ref": "AWS::AccountId"
+				},
+				"DatabaseInput": {
+					"Description": "The sales database for the lab",
+					"Name": "sales"
+				}
+			}
+		},
+		"GlueCrawlerRaw": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "SalesDatabase"
+				},
+				"Description": "Crawler for raw sales data",
+				"Name": "sforchlab-sales-raw-data-crawler",
+				"Role": {
+					"Fn::GetAtt": [
+						"GlueExecutionRole",
+						"Arn"
+					]
+				},
+				"TablePrefix": "raw_",
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-sforchlab-datalake/raw/sales"
+							}
+						}
+					]
+				}
+			}
+		},
+		"GlueCrawlerProcessed": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "SalesDatabase"
+				},
+				"Description": "Crawler for processed sales data",
+				"Name": "sforchlab-sales-processed-data-crawler",
+				"Role": {
+					"Fn::GetAtt": [
+						"GlueExecutionRole",
+						"Arn"
+					]
+				},
+				"TablePrefix": "processed_",
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-sforchlab-datalake/processed/sales"
+							}
+						}
+					]
+				}
+			}
+		},
+		"GlueCrawlerAggregated": {
+			"Type": "AWS::Glue::Crawler",
+			"Properties": {
+				"DatabaseName": {
+					"Ref": "SalesDatabase"
+				},
+				"Description": "Crawler for aggregated sales data",
+				"Name": "sforchlab-sales-aggregated-data-crawler",
+				"Role": {
+					"Fn::GetAtt": [
+						"GlueExecutionRole",
+						"Arn"
+					]
+				},
+				"TablePrefix": "aggregated_",
+				"Targets": {
+					"S3Targets": [
+						{
+							"Path": {
+								"Fn::Sub": "s3://${AWS::AccountId}-sforchlab-datalake/aggregated/daily_sales_revenue"
+							}
+						}
+					]
+				}
+			}
+		},
+		"SalesJob": {
+			"Type": "AWS::Glue::Job",
+			"Properties": {
+				"Command": {
+					"Name": "glueetl",
+					"ScriptLocation": {
+						"Fn::Sub": "s3://ee-assets-prod-${AWS::Region}/modules/db6f882c08574dda88b59040c607e491/v3/scripts/sforchlab-sales-processing.py"
+					}
+				},
+				"DefaultArguments": {
+					"--output_s3_bucket_name": {
+						"Fn::Sub": "${AWS::AccountId}-sforchlab-datalake"
+					}
+				},
+				"ExecutionProperty": {
+					"MaxConcurrentRuns": 1
+				},
+				"MaxRetries": 0,
+				"Timeout": 15,
+				"NumberOfWorkers": 10,
+				"WorkerType": "G.2X",
+				"GlueVersion": "3.0",
+				"Name": "sforchlab-sales-processing",
+				"Role": {
+					"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/sforchlab/sforchlab-GlueExecutionRole"
+				}
+			}
+		},
+		"clusterSubnetGroup": {
+			"Type": "AWS::Redshift::ClusterSubnetGroup",
+			"Properties": {
+				"Description": "Redshift Cluster Subnet Group",
+				"SubnetIds": [
+					{
+						"Ref": "PrivateSubnet1"
+					}
+				]
+			}
+		},
+		"redshiftSecurityGroup": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "Security group for Redshift cluster",
+				"GroupName": "Redshift Security Group",
+				"VpcId": {
+					"Ref": "VPC"
+				},
+				"SecurityGroupIngress": [
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "5439",
+						"ToPort": "5439",
+						"CidrIp": "0.0.0.0/0"
+					}
+				],
+				"SecurityGroupEgress": [
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "3306",
+						"ToPort": "3306",
+						"CidrIp": "0.0.0.0/0"
+					}
+				]
+			}
+		},
+		"RedshiftSecret": {
+			"Type": "AWS::SecretsManager::Secret",
+			"Properties": {
+				"Name": "RedshiftSecret",
+				"Description": "Redshift secret",
+				"SecretString": {
+					"Fn::Join": [
+						"",
+						[
+							"{\"username\":\"admin\",\"password\":\"",
+							{
+								"Ref": "ClusterPassword"
+							},
+							"\"}"
+						]
+					]
+				}
+			}
+		},
+		"SecretRedshiftInstanceAttachment": {
+			"Type": "AWS::SecretsManager::SecretTargetAttachment",
+			"Properties": {
+				"SecretId": {
+					"Ref": "RedshiftSecret"
+				},
+				"TargetId": {
+					"Ref": "redshiftCluster"
+				},
+				"TargetType": "AWS::Redshift::Cluster"
+			}
+		},
+		"redshiftCluster": {
+			"Type": "AWS::Redshift::Cluster",
+			"Properties": {
+				"DBName": "dev",
+				"IamRoles": [
+					{
+						"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/sforchlab/sforchlab-RedshiftExecutionRole"
+					}
+				],
+				"AquaConfigurationStatus": "enabled",
+				"MasterUsername": "admin",
+				"MasterUserPassword": {
+					"Ref": "ClusterPassword"
+				},
+				"NodeType": "ra3.xlplus",
+				"ClusterType": "single-node",
+				"PubliclyAccessible": false,
+				"ClusterSubnetGroupName": {
+					"Ref": "clusterSubnetGroup"
+				},
+				"VpcSecurityGroupIds": [
+					{
+						"Ref": "redshiftSecurityGroup"
+					}
+				]
+			}
+		},
+		"VPC": {
+			"Type": "AWS::EC2::VPC",
+			"Properties": {
+				"CidrBlock": {
+					"Ref": "VpcCIDR"
+				},
+				"EnableDnsSupport": "true",
+				"EnableDnsHostnames": "true",
+				"Tags": [
+					{
+						"Key": "Application",
+						"Value": {
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Name",
+						"Value": "RedshiftVPC"
+					}
+				]
+			}
+		},
+		"PrivateSubnet1": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"VpcId": {
+					"Ref": "VPC"
+				},
+				"CidrBlock": "10.0.0.0/26",
+				"AvailabilityZone": {
+					"Fn::Select": [
+						"0",
+						{
+							"Fn::GetAZs": ""
+						}
+					]
+				},
+				"Tags": [
+					{
+						"Key": "Application",
+						"Value": {
+							"Ref": "AWS::StackId"
+						}
+					}
+				]
+			}
+		},
+		"PrivateRouteTable1": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "VPC"
+				},
+				"Tags": [
+					{
+						"Key": "Application",
+						"Value": {
+							"Ref": "AWS::StackId"
+						}
+					}
+				]
+			}
+		},
+		"SubnetPrivateRouteTableAssociation1": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "PrivateSubnet1"
+				},
+				"RouteTableId": {
+					"Ref": "PrivateRouteTable1"
+				}
+			}
+		}
+	},
+	"Outputs": {
+		"RedshiftEndpointAddress": {
+			"Value": {
+				"Fn::GetAtt": [
+					"redshiftCluster",
+					"Endpoint.Address"
+				]
+			}
+		},
+		"RedshiftClusterId": {
+			"Value": {
+				"Ref": "redshiftCluster"
+			}
+		},
+		"RedshiftExecutionRoleARN": {
+			"Value": {
+				"Fn::GetAtt": [
+					"RedshiftExecutionRole",
+					"Arn"
+				]
+			}
+		}
+	}
+}
