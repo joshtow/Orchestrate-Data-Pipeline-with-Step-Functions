@@ -181,7 +181,7 @@ This state machine can now be used by other state machines to run a glue crawler
 Next, we're going to create a state machine to run Amazon Redshift SQL statements.
 
 1. Navigate to AWS Step Functions in the AWS Management Console.
-2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RunGlueCrawler" state machine from the list.
+2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RedshiftQuery" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 4. Design your state machine as shown in the following diagram.
 ![](/images/stepfunctions/redshift-1.PNG)
@@ -218,7 +218,7 @@ Next, we're going to create a state machine to run Amazon Redshift SQL statement
 - Value = string constant / FAILED
 ![](/images/stepfunctions/redshift-5.PNG)
 9. Drag a "Fail" state to the box labelled "Drop state here".
-10. Click "Add new choice rule", then click "Add conditions" and enter the following values.
+10. Click on the "Choice" activity again, ,and click "Add new choice rule", then click "Add conditions". Enter the following values.
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / ABORTED
@@ -244,9 +244,10 @@ Now that we've created our reusable state machines, let's create the process to 
 :information_source: Note - you can right click on a state and select "Duplicate state".
 
 ![](/images/stepfunctions/orchn-1.PNG)
+
 5. Click on the "Load Raw Sales Data" state. Under "API Parameters", select  "sforchlab-loaddataFunction$LATEST" as the "Function name"
 ![](/images/stepfunctions/orchn-2.PNG)
-6. Click on the "Crawl Raw Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
+6. Click on the "Crawl Raw Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "\<Region\>" and "\<AccountId\>".
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RunGlueCrawler",
@@ -264,7 +265,7 @@ Now that we've created our reusable state machines, let's create the process to 
 ```
 8. Make sure "Wait for task to complete" is selected.
 ![](/images/stepfunctions/orchn-3.PNG)
-9. Click on the "Crawl Processed Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
+9. Click on the "Crawl Processed Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "\<Region\>" and "\<AccountId\>".
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RunGlueCrawler",
@@ -274,7 +275,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-10. Click on the "Redshift: Create Table" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
+10. Click on the "Redshift: Create Table" state, and enter the following under "API Parameters". Make sure you replace the values of "\<Region\>" and "\<AccountId\>".
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
@@ -284,7 +285,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-11. Click on the "Redshift: Load Data" state, and enter the following under "API Parameters". Make sure you replace all instances of the values of "<Region>" and "<AccountId>".
+11. Click on the "Redshift: Load Data" state, and enter the following under "API Parameters". Make sure you replace all instances of the values of "\<Region\>" and "\<AccountId\>".
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
@@ -304,7 +305,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-13. Click on the "Redshift: Unload" state, and enter the following under "API Parameters". Make sure you replace all instance of the values of "<Region>" and "<AccountId>".
+13. Click on the "Redshift: Unload" state, and enter the following under "API Parameters". Make sure you replace all instance of the values of "\<Region\>" and "\<AccountId\>".
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
@@ -314,7 +315,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-14. Click on the "Crawl Aggregated Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
+14. Click on the "Crawl Aggregated Sales" state, and enter the following under "API Parameters". Make sure you replace the values of "\<Region\>" and "\<AccountId\>".
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RunGlueCrawler",
