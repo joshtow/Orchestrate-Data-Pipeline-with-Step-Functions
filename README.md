@@ -123,7 +123,7 @@ Next, we're going to create a state machine to run AWS crawlers.
 
 :information_source: Note - for simplicity in this lab, we will be using a polling mechanism to confirm the completion of the crawler. In a real use case, you could instead use a Callback mechanism - use AWS EventBridge triggered by the change of state of the crawler to callback to the state machine to progress the flow. 
 
-1. Navigate to [AWS Step Functions ](https://console.aws.amazon.com/stepfunctions/) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RunGlueCrawler" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 
@@ -180,7 +180,7 @@ This state machine can now be used by other state machines to run a glue crawler
 
 Next, we're going to create a state machine to run Amazon Redshift SQL statements.
 
-1. Navigate to [AWS Step Functions ](https://console.aws.amazon.com/stepfunctions/) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RedshiftQuery" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 4. Design your state machine as shown in the following diagram.
@@ -236,7 +236,7 @@ This state machine can now be used by other state machines to run a SQL statemen
 
 Now that we've created our reusable state machines, let's create the process to orchestrate the full data pipeline.
 
-1. Navigate to [AWS Step Functions ](https://console.aws.amazon.com/stepfunctions/) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "State machines" in the navigate panel. Click on the "sforchlab-dataPipelineOrchestration" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 4. Design your state machine as shown in the following diagram.
