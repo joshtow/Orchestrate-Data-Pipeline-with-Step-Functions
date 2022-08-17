@@ -1,4 +1,4 @@
-# Orchestrate-Data-Lake-and-Redshift-with-Step-Functions
+# Orchestrate Data Lake and Redshift with Step Functions
 This lab is provided as part of [AWS Innovate Data Edition](https://aws.amazon.com/events/aws-innovate/data/). Click [here](https://github.com/phonghuule/aws-innovate-data-edition-2022) to explore the full list of hands-on labs.
 
 :information_source: You will run this lab in your own AWS account and running this lab will incur some costs. Please follow directions at the end of the lab to remove resources to avoid future costs.
@@ -54,7 +54,7 @@ This template will create the following resources in your account:
 - Redshift cluster - sforchlab-warehouse-cluster - an empty state machine to be built in this lab, to orchestrate the process from end to end.
 
 1. Click on the following link to launch the CloudFormation process. Please double check you are in the correct account and region.
-[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sforchlab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/sforchlab/sforchlab-template.json)
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sforchlab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/sforchlab/sforchlab-template.json)
 2. On the "Create Stack" pages, the values should be pre-populated for you. Click Next.
 2. Under parameters, enter a password for the Redshift cluster. This password must between 8 and 64 characters in length, contain at least one uppercase letter, one lowercase letter, and one number, and can use any ASCII characters with ASCII codes 33–126, except \' (single quotation mark), \" (double quotation mark), \\, \/, or \@.
 3. For SubnetCIDR and VpcCIDR parameters values, default values have been suggested for use by the Redshift cluster instance. Please update these values as needed.
@@ -72,7 +72,7 @@ This template will create the following resources in your account:
 :information_source: If you are not already using Lake Formation, but do have resources using the AWS Glue Catalog, please consider impact carefully and permissions will need to be updated. These steps should be completed in a non-production/sandbox account.
 
 By default, AWS Lake Formation uses the IAMAllowedPrincipals group to provide super permissions to users and roles, effectively delegating access control to IAM policies. Before we can use AWS Lake Formation to manage access to our data, we need to revoke access provided by the IAMAllowedPrincipals group. In this way, IAM policies provide coarse grained permssions, while Lake Formation manages fine grained access control to catalog resources and data.
-1. Navigate to [AWS Lake Formation](https://console.aws.amazon.com/lakeformation/) in the AWS Management console. Confirm that you are in the correct region.
+1. Navigate to [AWS Lake Formation](https://us-east-1.console.aws.amazon.com/lakeformation/) in the AWS Management console. Confirm that you are in the correct region.
 2. The first time you use AWS Lake Formation, you need to configure an Adminstrator. On the "Welcome to Lake Formation" dialog, leave "Add myself" selected and click "Get started".
 ![](/images/lakeformation/welcome.PNG)
 3. Click on "Settings, and uncheck the 2 checkboxes under "Data catalog settings", then click "Save".
@@ -91,7 +91,7 @@ By default, AWS Lake Formation uses the IAMAllowedPrincipals group to provide su
 Before we can process the data, we need to grant some permissions in AWS Lake Formation. For this lab, to keep it simple, we're going to grant permissions on all tables in the database. In real use case, it's best practice to use more granular permissions.
 
 First, we'll grant permission for the Glue crawler to create tables in the Sales database.
-1. Navigate to [AWS Lake Formation](https://console.aws.amazon.com/lakeformation/) in the AWS Management console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Lake Formation](https://us-east-1.console.aws.amazon.com/lakeformation/) in the AWS Management console. Confirm that you are in the correct Region.
 2. Click on "Data lake permissions" in the navigation pane, and click "Grant".
 3. Leave "IAM users and roles" selected, and choose the "sforchlab-GlueExecutionRole" in the "IAM users and roles" dropdown.
 ![](/images/lakeformation/grant-glue-principal.PNG)
@@ -126,7 +126,7 @@ Next, we're going to create a state machine to run AWS crawlers.
 
 :information_source: Note - for simplicity in this lab, we will be using a polling mechanism to confirm the completion of the crawler. In a real use case, you could instead use a Callback mechanism - use AWS EventBridge triggered by the change of state of the crawler to callback to the state machine to progress the flow. 
 
-1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://us-east-1.console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RunGlueCrawler" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 
@@ -144,6 +144,7 @@ Next, we're going to create a state machine to run AWS crawlers.
 }
 ```
 ![](/images/stepfunctions/gluecrawler-2.PNG)
+
 6. On the Output tab of the "StartCrawler" activity, mark the checkbox next to "Transform result with ResultSelector...", and add the following into the text box:
 ```
 {
@@ -155,6 +156,7 @@ Next, we're going to create a state machine to run AWS crawlers.
 $.Status
 ```
 ![](/images/stepfunctions/gluecrawler-3.PNG)
+
 8. Click on the GetCrawler state, and enter the following under "API Parameters":
 ```
 {
@@ -162,11 +164,13 @@ $.Status
 }
 ```
 ![](/images/stepfunctions/gluecrawler-4.PNG)
+
 9. On the "Output" tab, mark "Add original input to output...". Leave "Combine original input with result" selected, and enter the following into the textbox:
 ```
 $.GetCrawler
 ```
 ![](/images/stepfunctions/gluecrawler-5.PNG)
+
 10. Click on the "Rule #1" path from the "Choice" state, and click "Add conditions". Set the values as shown below:
 - Variable = $.GetCrawler.Crawler.State
 - Operator = is equal to
@@ -183,13 +187,13 @@ This state machine can now be used by other state machines to run a glue crawler
 
 Next, we're going to create a state machine to run Amazon Redshift SQL statements.
 
-1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://us-east-1.console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "State machines" in the navigate panel. Click on the "sfochlab-RedshiftQuery" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 4. Design your state machine as shown in the following diagram.
 ![](/images/stepfunctions/redshift-1.PNG)
 
-:information_source: To form the loop back from the "Wait" state to the "GetCrawler" state, click on the "Wait" state and select "GetCrawler" from the "Next state" dropdown.
+:information_source: To form the loop back from the "Wait" state to the "DescribeStatement" state, click on the "Wait" state and select "DescribeStatement" from the "Next state" dropdown.
 
 :information_source: You can click and drag the "Success" state from one path to the other.
 
@@ -203,6 +207,7 @@ Next, we're going to create a state machine to run Amazon Redshift SQL statement
 }
 ```
 ![](/images/stepfunctions/redshift-2.PNG)
+
 6. Click on "DescribeStatement", and enter the following under "API Parameters".
 ```
 {
@@ -239,7 +244,7 @@ This state machine can now be used by other state machines to run a SQL statemen
 
 Now that we've created our reusable state machines, let's create the process to orchestrate the full data pipeline.
 
-1. Navigate to [AWS Step Functions](https://console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
+1. Navigate to [AWS Step Functions](https://us-east-1.console.aws.amazon.com/states/) in the AWS Management Console. Confirm that you are in the correct Region.
 2. Click on "State machines" in the navigate panel. Click on the "sforchlab-dataPipelineOrchestration" state machine from the list.
 3. Click the "Edit" button, then click the "Workflow Studio" button in the right hand corner.
 4. Design your state machine as shown in the following diagram.
@@ -288,7 +293,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-11. Click on the "Redshift: Load Data" state, and enter the following under "API Parameters". Make sure you replace all instances of the values of "\<Region\>" and "\<AccountId\>".
+11. Click on the "Redshift: Load Data" state, and enter the following under "API Parameters". Make sure you replace all instances of the values of "\<Region\>" and "\<AccountId\>" - Important: <AccountId> needs to be replaced in 3 places: in the StateMachineArn, in the bucket name and in the ARN for the RedshiftExecutionRole.
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
@@ -308,7 +313,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-13. Click on the "Redshift: Unload" state, and enter the following under "API Parameters". Make sure you replace all instance of the values of "\<Region\>" and "\<AccountId\>".
+13. Click on the "Redshift: Unload" state, and enter the following under "API Parameters". Make sure you replace all instance of the values of "\<Region\>" and "\<AccountId\>". Important: <AccountId> needs to be replaced in 3 places: in the StateMachineArn, in the bucket name and in the ARN for the RedshiftExecutionRole.
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
@@ -338,7 +343,7 @@ Now that we've created our reusable state machines, let's create the process to 
 1. In Step Functions, click on the "sforchlab-dataPipelineOrchestration" state machine, then click "Start execution". 
 2. In the popup, leave the default input, and click "Start execution".
 3. This should may take up to 10 minutes to complete.
-4. Navigate to [Amazon Athena](https://console.aws.amazon.com/athena) in the AWS Management Console. Confirm that you are in the correct Region.
+4. Navigate to [Amazon Athena](https://us-east-1.console.aws.amazon.com/athena) in the AWS Management Console. Confirm that you are in the correct Region.
 5. If this is the first time you're using Amazon Athena, click the "Explore the query editor" button; otherwise, click on "Query editor" in the navigation panel.
 6. Click on the "Settings" tab, then click on the "Manage" button.
 7. In the "Manage settings" page, for "Query result location and encryption" browse to the bucket named "<accountID>-sforchlab-athena", then click "Save".
@@ -354,7 +359,7 @@ SELECT * FROM "sales"."aggregated_daily_sales_revenue" limit 10;
 ## Clean Up
 
 ### Empty the S3 buckets
-1. To delete the contents of the S3 buckets, navigate to [Amazon S3](https://console.aws.amazon.com/s3) in the AWS Management Console. 
+1. To delete the contents of the S3 buckets, navigate to [Amazon S3](https://us-east-1.console.aws.amazon.com/s3) in the AWS Management Console. 
 2. For each bucket created in this lab, select the radio button next to the bucket, then click "Empty". 
 3. Enter the text to confirm and delete the contents.
 4. Complete these steps for both -datalake and the -athena buckets.
