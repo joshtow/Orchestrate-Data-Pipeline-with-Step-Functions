@@ -3,7 +3,7 @@ This lab is provided as part of [AWS Innovate Data Edition](https://aws.amazon.c
 
 :information_source: You will run this lab in your own AWS account and running this lab will incur some costs. Please follow directions at the end of the lab to remove resources to avoid future costs.
 
-In this lab, we'll show you how to use AWS Step Functions to orchestrate actions in your Amazon Redshift warehouse using the Redshift Data API.  We will create a Step Function model to catalog and prepare the data, load into Amazon Redshift, aggregate daily statistics and unload the results back to the data lake.
+In this lab, we'll show you how to use AWS Step Functions to orchestrate actions in your data lake and Amazon Redshift warehouse using the Redshift Data API.  We will create a Step Function model to catalog and prepare the data in the data lake, load into Amazon Redshift, aggregate daily statistics and unload the results back to the data lake. 
 
 ## Overview
 
