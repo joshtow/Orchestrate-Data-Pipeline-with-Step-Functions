@@ -215,25 +215,30 @@ Next, we're going to create a state machine to run Amazon Redshift SQL statement
 }
 ```
 ![](/images/stepfunctions/redshift-3.PNG)
+
 7. Click on the "Rule #1" path, then click "Add conditions". Add the following values:
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / FINISHED
 ![](/images/stepfunctions/redshift-4.PNG)
+
 8. Click "Add new choice rule", then click "Add conditions" and enter the following values.
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / FAILED
 ![](/images/stepfunctions/redshift-5.PNG)
+
 9. Drag a "Fail" state to the box labelled "Drop state here".
 10. Click on the "Choice" activity again, ,and click "Add new choice rule", then click "Add conditions". Enter the following values.
 - Variable = $.Status
 - Operator = is equal to
 - Value = string constant / ABORTED
 ![](/images/stepfunctions/redshift-6.PNG)
+
 11. In the "ABORTED" choice rule, in the "Then next state is:" dropdown, select "Fail".
 12. The final state machine should look similar to the following:
 ![](/images/stepfunctions/redshift-7.PNG)
+
 13. Click "Apply and exit", then "Save". 
 14. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.
 \
