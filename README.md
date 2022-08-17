@@ -55,6 +55,7 @@ This template will create the following resources in your account:
 
 1. Click on the following link to launch the CloudFormation process. Please double check you are in the correct account and region.
 [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sforchlab-foundation&templateURL=https://s3.amazonaws.com/ee-assets-prod-us-east-1/modules/1e02deca779a4be58b9d50513a464cdc/v1/sforchlab/sforchlab-template.json)
+2. On the "Create Stack" pages, the values should be pre-populated for you. Click Next.
 2. Under parameters, enter a password for the Redshift cluster. This password must between 8 and 64 characters in length, contain at least one uppercase letter, one lowercase letter, and one number, and can use any ASCII characters with ASCII codes 33–126, except \' (single quotation mark), \" (double quotation mark), \\, \/, or \@.
 3. For SubnetCIDR and VpcCIDR parameters values, default values have been suggested for use by the Redshift cluster instance. Please update these values as needed.
 ![](/images/cloudformation/stackdetails.PNG)
@@ -107,7 +108,7 @@ Next, we'll grant permissions for Redshift to query the data.
 9. In the "Databases" dropdown, select the "Sales" database.
 10. In the "Tables" dropdown, select "All tables"
 ![](/images/lakeformation/grant-redshift-resources.PNG)
-11. Under "Database permissions", mark the checkboxes next to "Select" and "Describe" for "Table permissions" only. Click "Grant".
+11. Under "Table permissions", mark the checkboxes next to "Select" and "Describe" for "Table permissions" only. Click "Grant".
 ![](/images/lakeformation/grant-redshift-permissions.PNG)
 Finally, we'll grant our user permission to query the table.
 12. Click on "Data lake permissions" in the navigation pane, and click "Grant".
@@ -192,7 +193,7 @@ Next, we're going to create a state machine to run Amazon Redshift SQL statement
 
 :information_source: You can click and drag the "Success" state from one path to the other.
 
-5. Click on the "ExecutionStatement", and enter the following unider "API Parameters" - replace the value of <RedshiftClusterId> with your Redshift cluster ID from the output of the CloudFormation template.
+5. Click on the "ExecuteStatement", and enter the following unider "API Parameters" - replace the value of <RedshiftClusterId> with your Redshift cluster ID from the output of the CloudFormation template.
 ```
 {
   "ClusterIdentifier": "<RedshiftClusterId>",
@@ -300,7 +301,7 @@ Now that we've created our reusable state machines, let's create the process to 
 12. Click on the "Redshift: Create View" state, and enter the following under "API Parameters". Make sure you replace the values of "<Region>" and "<AccountId>".
 ```
 {
-  "StateMachineArn": "arn:aws:states:us-east-1:405685483016:stateMachine:sforchlab-RedshiftQuery",
+  "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
   "Input": {
     "sql": "create view daily_sales_revenue as select sum(price) as daily_sales_revenue, trunc(timestamp) as day from sales where price !='' group by trunc(timestamp) order by trunc(timestamp);",
     "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
@@ -329,6 +330,8 @@ Now that we've created our reusable state machines, let's create the process to 
 ```
 15. Click "Apply and exit", then "Save". 
 16. You will see a popup warning about IAM permissions. Click "Save anyway" to continue.
+
+:information_source: What have we here? This state machine orchestrates a full end to end process of loading the data into S3 bucket (the lambda function), transforming and cataloging the data (Glue Job and Crawlers), used the COPY command to load the data into a Sales table in Redshift, created view in Redshift to aggregate the total sales by day, used the UNLOAD statement to send the aggregated data to the data lake, and finally updated the catalog with the aggregated data table (Glue Crawler).
 
 ## Step 6 - Run the State Machine and Validate results
 
