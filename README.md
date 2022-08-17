@@ -293,7 +293,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-11. Click on the "Redshift: Load Data" state, and enter the following under "API Parameters". Make sure you replace all instances of the values of "\<Region\>" and "\<AccountId\>" - Important: <AccountId> needs to be replaced in 3 places: in the StateMachineArn, in the bucket name and in the ARN for the RedshiftExecutionRole.
+11. Click on the "Redshift: Load Data" state, and enter the following under "API Parameters". Make sure you replace all instances of the values of "\<Region\>" and "\<AccountId\>" - **Important**: <AccountId> needs to be replaced in 3 places: in the StateMachineArn, in the bucket name and in the ARN for the RedshiftExecutionRole.
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
@@ -313,7 +313,7 @@ Now that we've created our reusable state machines, let's create the process to 
   }
 }
 ```
-13. Click on the "Redshift: Unload" state, and enter the following under "API Parameters". Make sure you replace all instance of the values of "\<Region\>" and "\<AccountId\>". Important: <AccountId> needs to be replaced in 3 places: in the StateMachineArn, in the bucket name and in the ARN for the RedshiftExecutionRole.
+13. Click on the "Redshift: Unload" state, and enter the following under "API Parameters". Make sure you replace all instance of the values of "\<Region\>" and "\<AccountId\>". **Important**: <AccountId> needs to be replaced in 3 places: in the StateMachineArn, in the bucket name and in the ARN for the RedshiftExecutionRole.
 ```
 {
   "StateMachineArn": "arn:aws:states:<Region>:<AccountId>:stateMachine:sforchlab-RedshiftQuery",
