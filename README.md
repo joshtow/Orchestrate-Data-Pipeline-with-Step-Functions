@@ -3,11 +3,11 @@ This lab is provided as part of [AWS Innovate Data Edition](https://aws.amazon.c
 
 :information_source: You will run this lab in your own AWS account and running this lab will incur some costs. Please follow directions at the end of the lab to remove resources to avoid future costs.
 
-In this lab, we'll show you how to use AWS Step Functions to orchestrate actions in your Amazon Redshift warehouse using the Redshift Data API.  We will create use a Step Function model to catalog and prepare the data, load into Amazon Redshift and create a view spanning the warehouse and data lake with Redshift Spectrum.
+In this lab, we'll show you how to use AWS Step Functions to orchestrate actions in your Amazon Redshift warehouse using the Redshift Data API.  We will create a Step Function model to catalog and prepare the data, load into Amazon Redshift, aggregate daily statistics and unload the results back to the data lake.
 
 ## Overview
 
-In this lab, we will use AWS Step Functions to orchestrate an end to end data pipeline. We will start by configuring our data lake in Lake Formation, load some data into an S3 bucket, then transform and catalog the data using AWS Glue. After that, we'll use the Redshift data API to load a portion of the data into Redshift, and create a view joining "warm" data in Amazon Redshift with "cold" data stored in our data lake. Finally, we'll use the UNLOAD command to send aggregated statistics from the Redshift warehouse back to the data lake and use Amazon Athena to run ad-hoc queries on the results.
+In this lab, we will use AWS Step Functions to orchestrate an end to end data pipeline. We will start by configuring our data lake in Lake Formation, load some data into an S3 bucket, then transform and catalog the data using AWS Glue. After that, we'll use the Redshift data API to load a portion of the data into Redshift, and create a view for aggregated daily sales. Finally, we'll use the UNLOAD command to send aggregated statistics from the Redshift warehouse back to the data lake and use Amazon Athena to run ad-hoc queries on the results.
 
 This lab will use the following services:
 - AWS Step Functions - a low-code, visual workflow service that developers use to build distributed applications, automate IT and business processes, and build data and machine learning pipelines using AWS services. Workflows manage failures, retries, parallelization, service integrations, and observability so developers can focus on higher-value business logic.
